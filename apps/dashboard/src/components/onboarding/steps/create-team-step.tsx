@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@midday/ui/form";
 import { Input } from "@midday/ui/input";
+import { useToast } from "@midday/ui/use-toast";
 import { getDefaultFiscalYearStartMonth } from "@midday/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -56,6 +57,7 @@ export function CreateTeamStep({
   const countryCode = use(defaultCountryCodePromise);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const isSubmittedRef = useRef(false);
 
@@ -72,9 +74,19 @@ export function CreateTeamStep({
         await queryClient.invalidateQueries();
         onComplete();
       },
-      onError: () => {
+      onError: (error) => {
         setIsLoading(false);
         isSubmittedRef.current = false;
+
+        toast({
+          duration: 6000,
+          title: "Unable to create team",
+          variant: "info",
+          description:
+            error.data?.code === "FORBIDDEN"
+              ? "All existing teams must be on a paid plan before creating another."
+              : "Something went wrong. Please try again.",
+        });
       },
     }),
   );
