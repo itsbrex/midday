@@ -13,10 +13,9 @@ export default function UpgradePage() {
           Midday is joining Ramp
         </h1>
         <p className="font-sans text-base text-muted-foreground leading-normal mb-2">
-          We're winding Midday down over the next 90 days. Your account stays
-          fully active during that time — no new charges, nothing to upgrade —
-          and you can keep using everything as normal while you migrate or
-          export your data.
+          We're winding Midday down. Your account stays fully active — no new
+          charges, nothing to upgrade — and you can keep using everything as
+          normal while you migrate or export your data.
         </p>
         <p className="font-sans text-base text-muted-foreground leading-normal mb-8">
           Read more about what's next on the{" "}

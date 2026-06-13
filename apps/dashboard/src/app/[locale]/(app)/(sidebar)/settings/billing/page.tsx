@@ -39,9 +39,9 @@ export default async function Billing() {
           <Card className="flex flex-col gap-2 p-4">
             <p className="text-sm font-medium">Midday is joining Ramp</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              We're winding Midday down over the next 90 days. Your account
-              stays fully active during that time — there's nothing to subscribe
-              to and you won't be charged. Read more on the{" "}
+              We're winding Midday down. Your account stays fully active —
+              there's nothing to subscribe to and you won't be charged. Read
+              more on the{" "}
               <Link
                 href="https://midday.ai/updates/joining-ramp"
                 className="underline hover:text-foreground transition-colors"

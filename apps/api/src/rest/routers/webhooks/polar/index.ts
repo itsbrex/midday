@@ -242,20 +242,24 @@ app.openapi(
               teamId,
             });
           } else {
-            // Subscription definitively ended (end-of-period cancellation
-            // or payment retries exhausted) -- downgrade to trial
+            // Wind-down mode: subscription has definitively ended, but we keep
+            // the team on its current plan so existing customers retain access
+            // (bank schedulers, insights, etc.) after Midday stops billing.
+            // Only the subscription state is cleared.
             await updateTeamById(db, {
               id: teamId,
               data: {
-                plan: "trial",
                 canceledAt: new Date().toISOString(),
                 subscriptionStatus: null,
               },
             });
 
-            logger.info("Team subscription revoked, downgraded to trial", {
-              teamId,
-            });
+            logger.info(
+              "Team subscription revoked; plan preserved for wind-down",
+              {
+                teamId,
+              },
+            );
           }
           break;
         }

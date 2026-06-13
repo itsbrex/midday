@@ -7,7 +7,7 @@ import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
 import { api } from "@api/utils/polar";
 import { getTeamById, updateTeamById } from "@midday/db/queries";
 import { createLoggerWithContext } from "@midday/logger";
-import { getPlanIntervalByProductId, getPlanProductId } from "@midday/plans";
+import { getPlanIntervalByProductId } from "@midday/plans";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -46,79 +46,15 @@ async function resolvePolarCustomer(
 export const billingRouter = createTRPCRouter({
   createCheckout: protectedProcedure
     .input(createCheckoutSchema)
-    .mutation(async ({ input, ctx: { db, session, teamId } }) => {
-      const { plan, planType, embedOrigin, currency, requireTrial } = input;
-
-      // Get team data
-      const team = await getTeamById(db, teamId!);
-
-      if (!team) {
-        throw new Error("Team not found");
-      }
-
-      const yearly = planType?.endsWith("_yearly") ?? false;
-      const productId = getPlanProductId(plan, yearly);
-
-      const trialEligible =
-        team.plan === "trial" &&
-        team.subscriptionStatus == null &&
-        team.canceledAt == null;
-
-      if (requireTrial && !trialEligible) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Team is not eligible for a trial",
-        });
-      }
-
-      // Resolve or create Polar customer so checkout skips email identification.
-      let polarCustomer: { id: string };
-      try {
-        polarCustomer = await api.customers.getExternal({
-          externalId: team.id,
-        });
-      } catch {
-        try {
-          polarCustomer = await api.customers.create({
-            externalId: team.id,
-            email: session.user.email ?? "",
-            name: team.name ?? undefined,
-          });
-        } catch {
-          // Email already belongs to a Polar customer under a different
-          // externalId (e.g. the user created a previous team). Reuse
-          // that customer — the checkout metadata carries the correct teamId.
-          const existing = await api.customers.list({
-            email: session.user.email ?? "",
-            limit: 1,
-          });
-
-          if (!existing.result.items.length) {
-            throw new Error("Failed to resolve Polar customer");
-          }
-
-          polarCustomer = existing.result.items[0]!;
-        }
-      }
-
-      // Create Polar checkout
-      const checkout = await api.checkouts.create({
-        products: [productId],
-        allowDiscountCodes: false,
-        customerId: polarCustomer.id,
-        metadata: {
-          teamId: team.id,
-          companyName: team.name ?? "",
-        },
-        embedOrigin,
-        currency: currency === "EUR" ? "eur" : "usd",
-        ...(trialEligible && {
-          trialInterval: "day" as const,
-          trialIntervalCount: 14,
-        }),
+    .mutation(async () => {
+      // Wind-down: Midday is shutting down billing. New subscriptions and
+      // trials are no longer accepted. Existing customers keep access via
+      // their current plan; the Polar webhook preserves the plan when the
+      // subscription is revoked at period end.
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "New subscriptions are no longer available.",
       });
-
-      return { url: checkout.url };
     }),
 
   orders: protectedProcedure
